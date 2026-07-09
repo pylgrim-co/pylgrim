@@ -18,10 +18,10 @@ The skills follow the [Agent Skills open standard](https://agentskills.io): they
 
 ```bash
 # any agent that supports skills (recommended)
-npx skills add SamuelHeal/pylgrim
+npx skills add pylgrim-co/pylgrim
 
 # Claude Code plugin
-/plugin marketplace add SamuelHeal/pylgrim
+/plugin marketplace add pylgrim-co/pylgrim
 
 # manual: copy skills/* into .claude/skills/ or .agents/skills/
 ```
