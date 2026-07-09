@@ -1,0 +1,13 @@
+{
+  "name": "pylgrim",
+  "owner": {
+    "name": "SamuelHeal"
+  },
+  "plugins": [
+    {
+      "name": "pylgrim",
+      "source": "./",
+      "description": "Skills for the .pylgrim/ intent ledger: pylgrim-plan, pylgrim-map, pylgrim-decide."
+    }
+  ]
+}

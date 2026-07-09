@@ -1,0 +1,5 @@
+{
+  "name": "pylgrim",
+  "version": "0.1.0",
+  "description": "The intent layer for AI-driven development: skills that build and maintain a per-repo .pylgrim/ ledger of constraints, work items, and decisions."
+}
