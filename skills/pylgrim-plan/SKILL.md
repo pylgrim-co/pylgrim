@@ -17,6 +17,7 @@ Turn agreed work into a work-item contract in `.pylgrim/` so the ledger remember
 - Run scripts with `python3`; if missing, try `python`; if Python is unavailable, follow references/spec-quick-ref.md manually, including the ULID rule.
 - Bundled scripts live in this skill's own directory, not the repo root: resolve `scripts/...` against the directory this SKILL.md loaded from (e.g. `.claude/skills/pylgrim-plan/scripts/new_entry.py`). "No such file or directory" means the script path is wrong, not that Python is missing; the manual fallback is only for a truly absent Python.
 - If the AskUserQuestion tool is unavailable, ask in plain text, one question at a time.
+- At every phase transition, one orientation line: what just finished, what happens next. One line, then the work; never running commentary.
 - Never write `mode: advise` or `mode: enforce`. Charter entries written by this skill are always `mode: observe`, `source: plan`.
 - Emit only the v0 frontmatter subset in references/spec-quick-ref.md. Quote any scalar containing `: # { } [ ] ,`.
 - Slugs: lowercase a-z, 0-9, hyphens, at most 48 characters, no leading or trailing hyphen. Derive from the title: "Add fuzzy search to the invoice list" becomes `add-fuzzy-search-invoice-list`.
@@ -85,14 +86,17 @@ Write every drafted entry now, as `status: proposed`: a stall or interruption le
 
 ## Phase 4: ratify and export
 
-Ratification is per entry and explicit: ratified requires the user's explicit accept in this session, and silence, refusal, ambiguity, or a headless no-reply leaves `proposed`, with one sanctioned exception: under a ratified `delegation-` charter entry covering work items (the Standing delegation rules in references/spec-quick-ref.md), ratify the entry directly, stamp `ratified_by: delegated` plus `last_confirmed`, and say so in one line. Delegation phrases ("just do it", "don't ask me", "you decide") never ratify: absent a delegation entry, offer the standing entry once and leave everything `proposed` with a one-line explanation. For each written entry the user chooses exactly one of:
+Ratification is per entry and explicit: ratified requires the user's explicit accept in this session, and silence, refusal, ambiguity, or a headless no-reply leaves `proposed`, with one sanctioned exception: under a ratified `delegation-` charter entry covering work items (the Standing delegation rules in references/spec-quick-ref.md), ratify the entry directly, stamp `ratified_by: delegated` plus `last_confirmed`, and say so in one line. Delegation phrases ("just do it", "don't ask me", "you decide") never ratify: absent a delegation entry, offer the standing entry once and leave everything `proposed` with a one-line explanation.
 
-- **accept**: flip `status: ratified` in place, add `last_confirmed: <today, YYYY-MM-DD>`.
+Walk the written entries one at a time per references/ratification.md: when there are several, list them first as a short index, then per entry present one compact card (the contract in one line; scope and out-of-scope in one line; why it earns the ledger) and ask with AskUserQuestion, options exactly **accept** / **edit** / **reject** / **defer** / **accept all remaining**, the question text inviting discussion ("or just reply to talk it through"). Plaintext fallback when the tool is unavailable, one line: `accept / edit <your wording> / reject / defer / accept all remaining, or just reply to talk it through.` A free-text reply is discussion: answer it, then re-ask the same entry. Outcomes per entry:
+
+- **accept**: flip `status: ratified` in place, add `last_confirmed: <today, YYYY-MM-DD>` and `ratified_by: explicit`.
 - **edit then accept**: apply the user's edits in the file, then as above.
 - **reject**: delete the file.
 - **defer**: leave `status: proposed`. Visible and inert.
+- **accept all remaining**: confirm once in one line, then apply accept to this and every unvisited entry.
 
-Only ratified entries are ever exported or injected into agent sessions. When several entries are on the table, one AskUserQuestion call can carry the whole ratification round.
+Only ratified entries are ever exported or injected into agent sessions.
 
 Then run `python3 scripts/export_claudemd.py` to regenerate the managed CLAUDE.md block from ratified entries. CLAUDE.md is only ever written by that script; never write CLAUDE.md by hand, inside or outside the markers.
 

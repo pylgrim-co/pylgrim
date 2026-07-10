@@ -22,6 +22,10 @@ Excavate the rules an existing repo already lives by into a proposed `.pylgrim/`
 - Emit only the v0 frontmatter subset in references/spec-quick-ref.md. Quote any scalar containing `: # { } [ ] ,`.
 - Slugs: lowercase a-z, 0-9, hyphens, at most 48 characters, no leading or trailing hyphen. Derive from the candidate title: "Never edit src/gen/" becomes `never-edit-src-gen`.
 
+## Narration contract
+
+At every phase transition, exactly one orientation line beginning `Phase N of 7:` stating what just finished, what happens next, and the expected effort. Example: `Phase 2 of 7: inventory done; harvesting intent artifacts next (CLAUDE.md, ADRs, configs, history), a few minutes.` On large repos the Phase 2 line additionally states scale and the reading budgets up front: "about 600 source files; reading CLAUDE.md fully, ADR decision paragraphs, config rule names, and 200 commit subjects; a few minutes." One line per transition, then the work; never a second progress line between transitions.
+
 ## Phase 0: preflight
 
 Determine the mode before reading anything else. `.pylgrim/` is a hidden dot-directory: check the path directly (list `.pylgrim/` itself), never infer absence from a plain directory listing that hides dotfiles:
@@ -112,7 +116,7 @@ Tighten-only, stated as law: never remove, narrow, or comment out an existing ac
 
 ## Phase 6: ratify and export
 
-Present the proposed constraints as one numbered table:
+Present the proposed constraints as one numbered table. The table is the INDEX of the walk, never the ask itself:
 
 ```
 #  candidate                                                   mode     evidence                     reality
@@ -123,16 +127,26 @@ Present the proposed constraints as one numbered table:
 
 `reality` answers "does the code appear to follow this rule?" from evidence the harvest already gathered plus at most 2 spot-checked files per candidate, never a new scanning phase: exactly one of `followed`, `contradicted (one example path)`, or `not checked` per row (label definitions and the honesty rule: references/charter-quality.md).
 
-Then walk it line by line; ratified requires an explicit per-entry accept in this session, and silence, refusal, ambiguity, or a headless no-reply leaves `proposed`. Delegation phrases ("just do it", "don't ask me", "you decide") never ratify: apply the Standing delegation rules in references/spec-quick-ref.md (offer the standing entry once; constraints are never delegable, so charter candidates stay `proposed` without an explicit accept). For each entry the user chooses exactly one of:
+Then walk the candidates one at a time per references/ratification.md. Each gets one compact card, then one question. Card shape:
 
-- **accept**: flip `status: ratified` in place, add `last_confirmed: <today, YYYY-MM-DD>`.
+```
+Candidate 3 of 12: Never edit src/gen/; regenerate with make codegen
+evidence: CLAUDE.md:12 "Never edit generated files under src/gen/; regenerate with make codegen"
+reality: followed
+earns its slot: the repo's most-quoted rule; briefing it stops agents editing generated output.
+```
+
+Ask with AskUserQuestion, options exactly: **accept** / **edit** / **reject** / **defer** / **accept all remaining**, the question text inviting discussion ("or just reply to talk it through"). Every card offers "accept all remaining": the walk is the default, the table-sprint is the user's opt-out. When AskUserQuestion is unavailable, print the card and exactly one plaintext line: `accept / edit <your wording> / reject / defer / accept all remaining, or just reply to talk it through.` A free-text reply is discussion, never a verdict: answer it, then re-ask the same candidate.
+
+Ratified requires an explicit per-entry accept in this session, and silence, refusal, ambiguity, or a headless no-reply leaves `proposed`. Delegation phrases ("just do it", "don't ask me", "you decide") never ratify: apply the Standing delegation rules in references/spec-quick-ref.md (offer the standing entry once; constraints are never delegable, so charter candidates stay `proposed` without an explicit accept). Outcomes per candidate:
+
+- **accept**: flip `status: ratified` in place, add `last_confirmed: <today, YYYY-MM-DD>` and `ratified_by: explicit`.
 - **edit then accept**: apply the user's wording in the file, then as above.
 - **reject**: delete the file.
 - **defer**: leave `status: proposed`. Visible and inert.
+- **accept all remaining**: confirm once in one line, then apply accept to this and every unvisited candidate.
 
-Batch the walk when AskUserQuestion is available: one call offering per-line choices, or "accept all except the ones you name". Respect a blanket "accept all" but confirm it once. All entries stay `mode: observe`, `source: map`. Evidence is kept after ratification as provenance; never strip it.
-
-Run the decision entries through the same motion after the constraints, as a second, shorter table. Decisions are delegable: under a ratified `delegation-` charter entry covering decisions (references/spec-quick-ref.md), ratify them directly, stamp `ratified_by: delegated` plus `last_confirmed`, and say so in one line.
+All entries stay `mode: observe`, `source: map`; evidence is kept after ratification as provenance, never stripped. Run the decision entries through the same walk after the constraints, behind a second, shorter index table. Decisions are delegable: under a ratified `delegation-` charter entry covering decisions (references/spec-quick-ref.md), ratify them directly, stamp `ratified_by: delegated` plus `last_confirmed`, and say so in one line.
 
 Then run `python3 scripts/export_claudemd.py` to regenerate the managed block in CLAUDE.md (and AGENTS.md when it exists) from ratified entries. Inside the markers, only that script ever writes; outside them, the sole permitted hand edit is phase 7 consolidation, per file, with consent.
 
@@ -164,7 +178,7 @@ After export, offer consolidation, one explicit yes or no per file; skipping is 
 |---|---|
 | Not a git repo | Skip history harvesting; work from files only and say so in one line. |
 | No Python | Follow the manual inventory checklist in references/harvest-sources.md, then write entries by hand per references/spec-quick-ref.md, including the manual ULID rule. Say validation and export were manual or skipped. |
-| Huge repo | The reading budgets in references/harvest-sources.md are hard bounds. Sample within them, prefer the highest-yield artifacts, and say what was skipped. |
+| Huge repo | The reading budgets in references/harvest-sources.md are hard bounds. Announce the sampling plan BEFORE reading (which artifacts, sampled how, what gets skipped) in the Phase 2 narration line, then sample within the budgets, preferring the highest-yield artifacts. |
 | Zero or thin intent artifacts | Propose only what structure and history genuinely support, 5 or fewer entries, and say so plainly in the closing summary (limited written intent). Never pad. |
 
 ## Bundled scripts (vendored separately; trust these contracts)
