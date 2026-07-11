@@ -106,3 +106,5 @@ Exact markers; the whole block is regenerated in full on every export, from rati
 ```
 
 Never hand-edit inside the markers; never touch anything outside them. A lone or reversed marker is an error: stop rather than guess. If CLAUDE.md does not exist, create it containing only the block; if it exists without markers, append the block.
+
+Active work items export with their `In scope:` / `Out of scope:` path lists (capped at 8 lines each, `(+N more)` overflow): agents follow path-precise context best, so write `scope_paths` as real globs and keep `out_of_scope` entries short; each renders verbatim as one line of the block.

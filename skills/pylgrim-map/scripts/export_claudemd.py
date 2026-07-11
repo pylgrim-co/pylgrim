@@ -3,9 +3,15 @@
 """export_claudemd.py regenerates the managed pylgrim block in CLAUDE.md and
 AGENTS.md from ratified ledger entries (spec section 7): constraints one line
 each with a mode tag, ratified work items that still have open criteria as
-checklists, and a pointer line. The identical block goes to both files:
-CLAUDE.md always, AGENTS.md when the file exists. The export is ULID-ordered,
-deterministic, and idempotent; a lone or reversed marker aborts the run.
+checklists plus their In scope / Out of scope path lists (capped, verbatim
+entries; natural-language out-of-scope items render as written), and a
+pointer line. The identical block goes to both files: CLAUDE.md always,
+AGENTS.md when the file exists. The export is ULID-ordered, deterministic,
+and idempotent; a lone or reversed marker aborts the run.
+
+Path lists are exported because the evaluation program showed agents comply
+near-perfectly with task-scoped, path-precise context (bias-audit-1.md C1:
+the oracle arm's format); the block now mirrors that format.
 """
 
 import argparse
@@ -82,9 +88,38 @@ def parse_inline_map(text):
     return result
 
 
+def parse_flow_list(text):
+    """Parse '[a, "b", c]' leniently; returns a list of strings."""
+    items = []
+    text = text.strip()
+    if not text.startswith("["):
+        return items
+    i = 1
+    while i < len(text) and text[i] != "]":
+        while i < len(text) and text[i] in " \t,":
+            i += 1
+        if i >= len(text) or text[i] == "]":
+            break
+        if text[i] == '"':
+            value, after = read_quoted(text, i)
+            if value is not None:
+                items.append(value)
+            i = after if after > 0 else len(text)
+        else:
+            j = i
+            while j < len(text) and text[j] not in ",]":
+                j += 1
+            item = text[i:j].strip()
+            if item:
+                items.append(item)
+            i = j
+    return items
+
+
 def parse_entry(path):
     """Lenient v0-subset read of one entry: returns (fields, body) where
-    scalar fields are str and block lists are list[dict]. The validator owns
+    scalar fields are str, flow lists are list[str], and block lists hold
+    dicts (inline-map items) or strings (plain items). The validator owns
     strictness; here malformed files abort with a pointer to validate.py."""
     with open(path, "r", encoding="utf-8") as fh:
         lines = fh.read().split("\n")
@@ -105,7 +140,11 @@ def parse_entry(path):
             continue
         if raw[0] in " \t":
             if current_list is not None and stripped.startswith("- "):
-                current_list.append(parse_inline_map(stripped[2:]))
+                fragment = stripped[2:].strip()
+                if fragment.startswith("{"):
+                    current_list.append(parse_inline_map(fragment))
+                else:
+                    current_list.append(parse_scalar(fragment))
             continue
         current_list = None
         colon = raw.find(":")
@@ -116,6 +155,8 @@ def parse_entry(path):
         if rest == "" or rest.startswith("#"):
             current_list = []
             fields[key] = current_list
+        elif rest.startswith("["):
+            fields[key] = parse_flow_list(rest)
         else:
             fields[key] = parse_scalar(rest)
     body = "\n".join(lines[close + 1:])
@@ -199,18 +240,43 @@ def collect(ledger):
             criteria = fields.get("criteria")
             if not isinstance(criteria, list):
                 continue
-            if not any(c.get("status") == "open" for c in criteria):
+            dict_criteria = [c for c in criteria if isinstance(c, dict)]
+            if not any(c.get("status") == "open" for c in dict_criteria):
                 continue
             title = summary_line(body, slug_of(name))
             checklist = []
-            for c in criteria:
+            for c in dict_criteria:
                 status = c.get("status", "open")
                 text = c.get("text", "")
                 box = "x" if status in ("satisfied", "waived") else " "
                 suffix = " (%s)" % status if status in ("failed", "waived") else ""
                 checklist.append("- [%s] %s%s" % (box, text, suffix))
-            work_items.append((title, checklist))
+            scope_paths = fields.get("scope_paths")
+            out_of_scope = fields.get("out_of_scope")
+            work_items.append((
+                title,
+                checklist,
+                scope_paths if isinstance(scope_paths, list) else [],
+                out_of_scope if isinstance(out_of_scope, list) else [],
+            ))
     return constraints, work_items, delegated
+
+
+# Path lists are capped so a work item with a sprawling scope cannot bloat
+# the block; the ledger entry stays the full record.
+PATH_CAP = 8
+
+
+def path_lines(label, values):
+    """Render one In scope / Out of scope list; [] when there is nothing."""
+    items = [v for v in values if isinstance(v, str) and v.strip()]
+    if not items:
+        return []
+    lines = ["", "%s:" % label]
+    lines.extend("- %s" % v for v in items[:PATH_CAP])
+    if len(items) > PATH_CAP:
+        lines.append("- (+%d more)" % (len(items) - PATH_CAP))
+    return lines
 
 
 def build_block(ledger):
@@ -224,10 +290,12 @@ def build_block(ledger):
     if work_items:
         lines.append("## Active work")
         lines.append("")
-        for title, checklist in work_items:
+        for title, checklist, scope_paths, out_of_scope in work_items:
             lines.append("### %s" % title)
             lines.append("")
             lines.extend(checklist)
+            lines.extend(path_lines("In scope", scope_paths))
+            lines.extend(path_lines("Out of scope", out_of_scope))
             lines.append("")
     lines.append("Skills: log settled decisions with the pylgrim-decide skill; "
                  "plan new work into the ledger with pylgrim-plan; re-map repo "
