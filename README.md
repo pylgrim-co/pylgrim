@@ -44,6 +44,6 @@ npx skills add pylgrim-co/pylgrim
 
 ## Roadmap
 
-Capture, deterministic checks, a `pylgrim check` gate for CI, and a local web viewer are the next phases, milestone-gated. The full spec and the rest of the loop open up as they ship.
+Next, milestone-gated: the daemon (capture, deterministic checks, and a per-message refresh that recomposes the injected slice on every prompt so an agent's context stays current for the whole session), a `pylgrim check` gate for CI, and a local web viewer. The full spec and the rest of the loop open up as they ship.
 
 MIT licensed.
